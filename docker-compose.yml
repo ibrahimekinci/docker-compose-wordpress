@@ -1,0 +1,70 @@
+version: '3.1'
+
+services:
+  app_wordpress:
+    image: wordpress:latest
+    restart: always
+    ports:
+      - 8080:80
+    depends_on:
+        - db_mysql
+    links:
+        - db_mysql        
+    environment:
+      WORDPRESS_DB_NAME: db_wordpress 
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress
+      WORDPRESS_DB_HOST: db_mysql
+      WORDPRESS_DB_CHARSET : utf8
+      WORDPRESS_DEBUG : 1
+      WORDPRESS_TABLE_PREFIX : wp_
+      WORDPRESS_CONFIG_EXTRA: |
+        define( 'WP_DISABLE_FATAL_ERROR_HANDLER', true );   // 5.2 and later define( 'WP_DEBUG', true );
+        define( 'WP_DEBUG_DISPLAY', true ); 
+        define( 'WP_MEMORY_LIMIT', '128M' );
+        define( 'WP_MAX_MEMORY_LIMIT', '512M' ); 
+        define('WP_CACHE', false);
+        define('WP_DEBUG', true);
+        define('WORDPRESS_SMTP_AUTH', false);
+        define('WORDPRESS_SMTP_SECURE', '');
+        define('WORDPRESS_SMTP_HOST', 'mailhog');
+        define('WORDPRESS_SMTP_PORT', '1025');
+        define('WORDPRESS_SMTP_USERNAME', null);
+        define('WORDPRESS_SMTP_PASSWORD', null);
+        define('WORDPRESS_SMTP_FROM', 'whoever@example.com');
+        define('WORDPRESS_SMTP_FROM_NAME', 'Whoever');
+    volumes:
+      - app_wordpress:/var/www/html
+      - ./src/wp-content:/var/www/html/wp-content
+      - ./src/wp-config-sample.php:/usr/src/wordpress/wp-config-sample.php
+      - ./src/uploads.ini:/usr/local/etc/php/conf.d/uploads.ini
+      
+  db_mysql:
+    image: mysql:5.7
+    restart: always
+    environment:
+      MYSQL_DATABASE: db_wordpress
+      MYSQL_USER: wordpress
+      MYSQL_PASSWORD: wordpress
+      MYSQL_RANDOM_ROOT_PASSWORD: 'admin'
+    volumes:
+      - db_mysql:/var/lib/mysql
+      
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    depends_on:
+        - db_mysql
+    links:
+        - db_mysql
+    restart: always
+    ports: 
+        - '8081:80'
+    environment: 
+        PMA_HOST: db_mysql
+        MYSQL_ROOT_PASSWORD: admin
+        
+networks:
+    network-wordpress:
+volumes:
+  app_wordpress:
+  db_mysql:
